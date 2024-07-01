@@ -15,12 +15,9 @@ fi
 echo "Installing dependencies..."
 poetry install
 
-echo "activeting shell..."
-poetry shell
-
 # Login to your account
 echo "Login to your Composio acount"
-composio login
+poetry run composio login
 
 # Copy env backup to .env file
 if [ -f ".env.example" ]; then
