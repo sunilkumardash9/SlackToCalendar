@@ -1,16 +1,22 @@
 #!/bin/bash
 
-# Create a virtual environment
-echo "Creating virtual environment..."
-python3 -m venv ~/.venvs/slack_agent
+# Check if Poetry is installed
+if ! command -v poetry &> /dev/null
+then
+    echo "Poetry could not be found, installing..."
+    # Install Poetry
+    curl -sSL https://install.python-poetry.org | python3 -
+    echo "Poetry has been installed."
+else
+    echo "Poetry is already installed."
+fi
 
-# Activate the virtual environment
-echo "Activating virtual environment..."
-source ~/.venvs/slack_agent/bin/activate
+# Initialize the environment and install dependencies from pyproject.toml
+echo "Installing dependencies..."
+poetry install
 
-# Install libraries from requirements.txt 
-echo "Installing libraries from requirements.txt..."
-pip install -r requirements.txt
+echo "activeting shell..."
+poetry shell
 
 # Login to your account
 echo "Login to your Composio acount"
