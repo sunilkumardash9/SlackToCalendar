@@ -6,8 +6,6 @@ from composio import Composio
 from composio.client import Action
 from composio.client.collections import TriggerEventData
 from composio.tools import ComposioToolSet
-from llama_agents import LlamaAgentsClient, LocalLauncher
-
 from agents import agent
 
 BOT_ID = os.environ["BOT_ID"]
@@ -53,7 +51,7 @@ def replace_emails_with_uids(text: str, uids_to_emails: Dict[str, str]) -> str:
     email_pattern = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b')
     return email_pattern.sub(lambda match: '<@' + emails_to_uids.get(match.group(0), match.group(0)) + '>', text)
 
-def remove_url_brackets(text):
+def remove_url_brackets(text:str) -> str:
     # Regular expression to find URLs enclosed within '<' and '>'
     url_pattern = r'<(https?://[^\s]+)>'
     # Replace found URLs without '<' and '>'
