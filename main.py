@@ -6,6 +6,7 @@ from composio import Composio
 from composio.client import Action
 from composio.client.collections import TriggerEventData
 from composio.tools import ComposioToolSet
+from llama_agents import LlamaAgentsClient, LocalLauncher
 
 from agents import agent
 
@@ -18,7 +19,7 @@ composio_client = Composio(api_key=os.getenv("COMPOSIO_API_KEY"))
 entity = composio_client.get_entity("default")
 
 
-def extract_user_ids(message: str, exclude_id: str = os.environ["BOT_ID"]) -> List[str]:
+def extract_user_ids(message: str, exclude_id: str = BOT_ID) -> List[str]:
     """Extracts Slack user IDs, optionally excluding the bot's ID."""
     pattern = r"<@(\w+)>"
     user_ids = re.findall(pattern, message)
@@ -29,13 +30,15 @@ def fetch_user_details(user_ids: List[str]) -> Dict[str, str]:
     uid_to_email = {}
     for user_id in user_ids:
         response = entity.execute(
-            action=Action.SLACK_USERS_INFO,
+            action=Action.SLACKBOT_USERS_PROFILE_GET_PROFILE_INFO,
             params={"user": user_id},
         )
         if response['response_data']['ok']:
-            user = response['response_data']['user']
-            profile = user['profile']
-            uid_to_email[user_id] = profile['email']
+            user = response['response_data']['profile']
+            # profile = user.get('profile', {})
+            email = user.get('email')
+            if email:
+                uid_to_email[user_id] = email
     return uid_to_email
 
 def replace_user_ids_with_emails(text: str, uid_to_email: Dict[str, str]) -> str:
@@ -50,21 +53,31 @@ def replace_emails_with_uids(text: str, uids_to_emails: Dict[str, str]) -> str:
     email_pattern = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b')
     return email_pattern.sub(lambda match: '<@' + emails_to_uids.get(match.group(0), match.group(0)) + '>', text)
 
+def remove_url_brackets(text):
+    # Regular expression to find URLs enclosed within '<' and '>'
+    url_pattern = r'<(https?://[^\s]+)>'
+    # Replace found URLs without '<' and '>'
+    cleaned_text = re.sub(url_pattern, r'\1', text)
+    return cleaned_text
+
 def run_agent(text: str, channel: str) -> Tuple[str, int]:
     user_ids = extract_user_ids(text)
     uid_to_email = fetch_user_details(user_ids)
     text_with_emails = replace_user_ids_with_emails(text, uid_to_email)
-
+    # task_id = client.create_task(text_with_emails)
+    # result = client.get_task_result(task_id)
     response = agent.chat(text_with_emails)
+    # print("----------"+response+"---------")
     reply_with_usernames = replace_emails_with_uids(response.response, uid_to_email)
+    reply_with_formatted_url = remove_url_brackets(reply_with_usernames)
     # Post the text with usernames to the Slack channel
-    entity.execute(action=Action.SLACK_CHAT_POST_MESSAGE,
-                   params={"text": reply_with_usernames, "channel": channel})
+    entity.execute(action=Action.SLACKBOT_CHAT_ME_MESSAGE,
+                   params={"text": reply_with_formatted_url, "channel": channel})
     return "Agent run completed", 200
 
 
-@listner.callback(filters={"trigger_id": os.environ["TRIGGER_ID"]})
-def event_handler(event: TriggerEventData) -> None:
+@listner.callback(filters={"trigger_id": "b791b667-088a-4573-8db3-6a80d868d075"})
+def event_handler(event: TriggerEventData) -> Tuple:
     message = event.payload['event']['text']
     channel = event.payload['event']['channel']
     if BOT_ID not in message:
