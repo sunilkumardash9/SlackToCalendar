@@ -3,6 +3,9 @@
 This Guide shows you how to create an AI powered Slack bot to schedule Google Calendar events.
 
 ## workflow overview
+![slack_calendar_flow](https://github.com/sunilkumardash9/SlackToCalendar/assets/47926185/f88413e7-aa64-402c-83e7-563b82b80a64)
+
+
 
 
 ## Prerequisites
